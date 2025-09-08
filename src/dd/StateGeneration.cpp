@@ -46,7 +46,7 @@ using IndexDistribution = std::uniform_int_distribution<std::size_t>;
 ComplexValue randomComplexOnUnitCircle(Generator& gen,
                                        AngleDistribution& dist) {
   const double angle = dist(gen);
-  return {std::cos(angle), std::sin(angle)};
+  return ComplexValue::fromRealImag(std::cos(angle), std::sin(angle));
 }
 
 /**
@@ -167,10 +167,10 @@ VectorDD makeBasisState(const std::size_t n,
       edges = {{{f.p, ComplexValue{dd::SQRT2_2}}, {f.p, ComplexValue{-dd::SQRT2_2}}}};
       break;
     case BasisStates::right:
-      edges = {{{f.p, ComplexValue{dd::SQRT2_2}}, {f.p, ComplexValue{0.0, dd::SQRT2_2}}}};
+      edges = {{{f.p, ComplexValue{dd::SQRT2_2}}, {f.p, ComplexValue::fromRealImag(0.0, dd::SQRT2_2)}}};
       break;
     case BasisStates::left:
-      edges = {{{f.p, ComplexValue{dd::SQRT2_2}}, {f.p, ComplexValue{0.0, -dd::SQRT2_2}}}};
+      edges = {{{f.p, ComplexValue{dd::SQRT2_2}}, {f.p, ComplexValue::fromRealImag(0.0, -dd::SQRT2_2)}}};
       break;
     }
     f = dd.makeDDNode(v, edges);

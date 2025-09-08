@@ -56,6 +56,22 @@ struct ComplexValue {
         coeffs[2] = static_cast<int64_t>(std::round(c.imag()));
         updateComponents();
     }
+    ComplexValue(double real, double imag) {
+      coeffs.fill(0);
+      coeffs[0] = static_cast<int64_t>(std::round(real));
+      coeffs[2] = static_cast<int64_t>(std::round(imag));
+      r = real;
+      i = imag;
+      // updateComponents(); // if needed for compatibility
+    }
+    // Factory for a complex value with floating-point components
+    static ComplexValue fromRealImag(double real, double imag) {
+        ComplexValue val;
+        val.r = real;
+        val.i = imag;
+        // Optionally: fill coeffs for compatibility if needed
+        return val;
+    }
 
     static ComplexValue omega(int k);
 
