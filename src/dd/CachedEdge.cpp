@@ -82,7 +82,8 @@ auto CachedEdge<Node>::normalize(Node* p,
            "Edge weight should be one when minWeight is zero.");
     p->e[argMin] = vEdge::zero();
   } else {
-    p->e[argMin] = {e[argMin].p, minW};
+    //DCDEBUG    p->e[argMin] = {e[argMin].p, minW};
+    p->e[argMin] = Edge<dd::vNode>(e[argMin].p, minW);
   }
 
   return {p, topWeight};

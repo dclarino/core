@@ -76,10 +76,17 @@ template <typename Node> struct CachedEdge {
    * @param w The weight of the terminal edge.
    * @return A terminal edge with the given weight.
    */
-  [[nodiscard]] static constexpr CachedEdge
-  terminal(const std::complex<fp>& w) {
-    return CachedEdge{Node::getTerminal(), static_cast<ComplexValue>(w)};
+  [[nodiscard]] static CachedEdge
+  terminal(const std::complex<fp>& /*w*/) {
+    // No conversion possible: fallback to zero or error
+    throw std::logic_error("Conversion from std::complex<fp> to omega ComplexValue is not supported.");
+    // Alternatively: return zero
+    // return CachedEdge{Node::getTerminal(), ComplexValue()};
   }
+  //DCTODO [[nodiscard]] static constexpr CachedEdge
+  // terminal(const std::complex<fp>& w) {
+  //   return CachedEdge{Node::getTerminal(), static_cast<ComplexValue>(w)};
+  // }
 
   /**
    * @brief Create a terminal edge with the given weight.

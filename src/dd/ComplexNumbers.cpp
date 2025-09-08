@@ -33,7 +33,7 @@ fp ComplexNumbers::mag(const Complex& a) noexcept {
 
 fp ComplexNumbers::arg(const Complex& a) noexcept {
   const auto val = static_cast<ComplexValue>(a);
-  return std::atan2(val.i, val.r);
+  return std::atan2(val.imag(), val.real());
 }
 
 Complex ComplexNumbers::conj(const Complex& a) noexcept {
@@ -60,7 +60,7 @@ Complex ComplexNumbers::lookup(const std::complex<fp>& c) {
 }
 
 Complex ComplexNumbers::lookup(const ComplexValue& c) {
-  return lookup(c.r, c.i);
+  return lookup(c.real(), c.imag());
 }
 
 Complex ComplexNumbers::lookup(const fp r) {
