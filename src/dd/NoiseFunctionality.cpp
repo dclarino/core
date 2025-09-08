@@ -74,11 +74,10 @@ StochasticNoiseFunctionality::StochasticNoiseFunctionality(
                                            multiQubitGateFactor),
       oneMinusSqrtAmplitudeDampingProbabilityMulti(
           std::sqrt(1 - (multiQubitGateFactor * amplitudeDampingProb))),
-      ampDampingTrue({0, sqrtAmplitudeDampingProbability, 0, 0}),
-      ampDampingTrueMulti({0, sqrtAmplitudeDampingProbabilityMulti, 0, 0}),
-      ampDampingFalse({1, 0, 0, oneMinusSqrtAmplitudeDampingProbability}),
-      ampDampingFalseMulti(
-          {1, 0, 0, oneMinusSqrtAmplitudeDampingProbabilityMulti}),
+      ampDampingTrue({std::complex<double>{0.0, 0.0}, std::complex<double>{sqrtAmplitudeDampingProbability, 0.0}, std::complex<double>{0.0, 0.0}, std::complex<double>{0.0, 0.0}}),
+      ampDampingTrueMulti({std::complex<double>{0.0, 0.0}, std::complex<double>{sqrtAmplitudeDampingProbabilityMulti, 0.0}, std::complex<double>{0.0, 0.0}, std::complex<double>{0.0, 0.0}}),
+      ampDampingFalse({std::complex<double>{1.0, 0.0}, std::complex<double>{0.0, 0.0}, std::complex<double>{0.0, 0.0}, std::complex<double>{oneMinusSqrtAmplitudeDampingProbability, 0.0}}),
+      ampDampingFalseMulti({std::complex<double>{1.0, 0.0}, std::complex<double>{0.0, 0.0}, std::complex<double>{0.0, 0.0}, std::complex<double>{oneMinusSqrtAmplitudeDampingProbabilityMulti, 0.0}}),
       noiseEffects(initializeNoiseEffects(cNoiseEffects)),
       identityDD(Package::makeIdent()) {
   sanityCheckOfNoiseProbabilities(gateNoiseProbability, amplitudeDampingProb,
@@ -118,11 +117,6 @@ void StochasticNoiseFunctionality::applyNoiseOperation(
     auto tmp = package->multiply(stackedOperation, state);
 
     if (ComplexNumbers::mag2(tmp.w) < dist(generator)) {
-      // The probability of amplitude damping does not only depend on the
-      // noise probability, but also the quantum state. Due to the
-      // normalization constraint of decision diagrams the probability for
-      // applying amplitude damping stands in the root edge weight, of the dd
-      // after the noise has been applied
       stackedOperation = generateNoiseOperation(operation, target, generator,
                                                 true, multiQubitOperation);
       tmp = package->multiply(stackedOperation, state);
@@ -133,7 +127,6 @@ void StochasticNoiseFunctionality::applyNoiseOperation(
     package->decRef(state);
     state = tmp;
 
-    // I only need to apply the operations once
     operation = identityDD;
   }
 }
@@ -202,22 +195,14 @@ qc::OpType StochasticNoiseFunctionality::returnNoiseOperation(
   switch (noiseOperation) {
   case Depolarization: {
     if (prob >= (getNoiseProbability(multiQubitNoiseFlag) * 0.75)) {
-      // prob > prob apply qc::I, also 25 % of the time when depolarization is
-      // applied nothing happens
       return qc::I;
     }
     if (prob < (getNoiseProbability(multiQubitNoiseFlag) * 0.25)) {
-      // if 0 < prob < 0.25 (25 % of the time when applying depolarization)
-      // apply qc::X
       return qc::X;
     }
     if (prob < (getNoiseProbability(multiQubitNoiseFlag) * 0.5)) {
-      // if 0.25 < prob < 0.5 (25 % of the time when applying depolarization)
-      // apply qc::Y
       return qc::Y;
     }
-    // if 0.5 < prob < 0.75 (25 % of the time when applying depolarization)
-    // apply qc::Z
     return qc::Z;
   }
   case PhaseFlip: {
@@ -289,14 +274,10 @@ dCachedEdge DeterministicNoiseFunctionality::applyNoiseEffects(
     for (std::size_t i = 0; i < newEdges.size(); i++) {
       auto& successor = originalCopy.p->e[i];
       if (firstPathEdge || i == 1) {
-        // If I am to the firstPathEdge I cannot minimize the necessary
-        // operations anymore
         dEdge::applyDmChangesToEdge(successor);
         newEdges[i] = applyNoiseEffects(successor, usedQubits, true, nextLevel);
         dEdge::revertDmChangesToEdge(successor);
       } else if (i == 2) {
-        // Since e[1] == e[2] (due to density matrix representation), I can skip
-        // calculating e[2]
         newEdges[2] = newEdges[1];
       } else {
         dEdge::applyDmChangesToEdge(successor);
@@ -344,44 +325,36 @@ void DeterministicNoiseFunctionality::applyPhaseFlipToEdges(
     ArrayOfEdges& e, const double probability) {
   const auto complexProb = 1. - (2. * probability);
 
-  // e[0] = e[0]
-  // e[1] = (1-2p)*e[1]
   if (!e[1].w.exactlyZero()) {
     e[1].w *= complexProb;
   }
-  // e[2] = (1-2p)*e[2]
   if (!e[2].w.exactlyZero()) {
     e[2].w *= complexProb;
   }
-  // e[3] = e[3]
 }
 
 void DeterministicNoiseFunctionality::applyAmplitudeDampingToEdges(
     ArrayOfEdges& e, const double probability) const {
-  // e[0] = e[0] + p*e[3]
   if (!e[3].w.exactlyZero()) {
     if (!e[0].w.exactlyZero()) {
       const auto var = static_cast<Qubit>(std::max(
           {e[0].p != nullptr ? e[0].p->v : 0, e[1].p != nullptr ? e[1].p->v : 0,
            e[2].p != nullptr ? e[2].p->v : 0,
            e[3].p != nullptr ? e[3].p->v : 0}));
-      e[0] = package->add2(e[0], {e[3].p, e[3].w * probability}, var);
+      e[0] = package->add2(e[0], dCachedEdge{e[3].p, e[3].w * probability}, var);
     } else {
-      e[0] = {e[3].p, e[3].w * probability};
+      e[0] = dCachedEdge{e[3].p, e[3].w * probability};
     }
   }
 
-  // e[1] = sqrt(1-p)*e[1]
   if (!e[1].w.exactlyZero()) {
     e[1].w *= std::sqrt(1 - probability);
   }
 
-  // e[2] = sqrt(1-p)*e[2]
   if (!e[2].w.exactlyZero()) {
     e[2].w *= std::sqrt(1 - probability);
   }
 
-  // e[3] = (1-p)*e[3]
   if (!e[3].w.exactlyZero()) {
     e[3].w *= (1 - probability);
   }
@@ -397,53 +370,44 @@ void DeterministicNoiseFunctionality::applyDepolarisationToEdges(
 
   const auto oldE0Edge = e[0];
 
-  // e[0] = 0.5*((2-p)*e[0] + p*e[3])
   {
-    // helperEdge[0] = 0.5*((2-p)*e[0]
     helperEdge[0].p = e[0].p;
     if (!e[0].w.exactlyZero()) {
       helperEdge[0].w = e[0].w * (2 - probability) * 0.5;
     } else {
-      helperEdge[0].w = 0;
+      helperEdge[0].w = ComplexValue{static_cast<int64_t>(0)};
     }
 
-    // helperEdge[1] = 0.5*p*e[3]
     helperEdge[1].p = e[3].p;
     if (!e[3].w.exactlyZero()) {
       helperEdge[1].w = e[3].w * probability * 0.5;
     } else {
-      helperEdge[1].w = 0;
+      helperEdge[1].w = ComplexValue{static_cast<int64_t>(0)};
     }
 
-    // e[0] = helperEdge[0] + helperEdge[1]
     e[0] = package->add2(helperEdge[0], helperEdge[1], var);
   }
 
-  // e[1]=(1-p)*e[1]
   if (!e[1].w.exactlyZero()) {
     e[1].w *= (1 - probability);
   }
-  // e[2]=(1-p)*e[2]
   if (!e[2].w.exactlyZero()) {
     e[2].w *= (1 - probability);
   }
 
-  // e[3] = 0.5*((2-p)*e[3]) + 0.5*(p*e[0])
   {
-    // helperEdge[0] = 0.5*((2-p)*e[3])
     helperEdge[0].p = e[3].p;
     if (!e[3].w.exactlyZero()) {
       helperEdge[0].w = e[3].w * (2 - probability) * 0.5;
     } else {
-      helperEdge[0].w = 0;
+      helperEdge[0].w = ComplexValue{static_cast<int64_t>(0)};
     }
 
-    // helperEdge[1] = 0.5*p*e[0]
     helperEdge[1].p = oldE0Edge.p;
     if (!oldE0Edge.w.exactlyZero()) {
       helperEdge[1].w = oldE0Edge.w * probability * 0.5;
     } else {
-      helperEdge[1].w = 0;
+      helperEdge[1].w = ComplexValue{static_cast<int64_t>(0)};
     }
     e[3] = package->add2(helperEdge[0], helperEdge[1], var);
   }

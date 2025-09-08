@@ -739,7 +739,7 @@ dEdge Package::applyOperationToDensity(dEdge& e, const mEdge& operation) {
 ComplexValue Package::innerProduct(const vEdge& x, const vEdge& y) {
   if (x.isTerminal() || y.isTerminal() || x.w.approximatelyZero() ||
       y.w.approximatelyZero()) { // the 0 case
-    return 0;
+    return ComplexValue{static_cast<int64_t>(0)};
   }
 
   const auto w = std::max(x.p->v, y.p->v);
@@ -764,11 +764,11 @@ ComplexValue Package::innerProduct(const vEdge& x, const vEdge& y,
                                    const Qubit var) {
   const auto xWeight = static_cast<ComplexValue>(x.w);
   if (xWeight.approximatelyZero()) {
-    return 0;
+    return ComplexValue{static_cast<int64_t>(0)};
   }
   const auto yWeight = static_cast<ComplexValue>(y.w);
   if (yWeight.approximatelyZero()) {
-    return 0;
+    return ComplexValue{static_cast<int64_t>(0)};
   }
 
   const auto rWeight = xWeight * yWeight;
@@ -781,7 +781,7 @@ ComplexValue Package::innerProduct(const vEdge& x, const vEdge& y,
   }
 
   const auto w = static_cast<Qubit>(var - 1U);
-  ComplexValue sum = 0;
+  ComplexValue sum = ComplexValue{static_cast<int64_t>(0)};
   // Iterates through edge weights recursively until terminal
   for (auto i = 0U; i < RADIX; i++) {
     vEdge e1{};
@@ -970,7 +970,7 @@ mEdge Package::reduceAncillae(mEdge e, const std::vector<bool>& ancillary,
     }
   }
 
-  auto g = CachedEdge<mNode>{e.p, 1.};
+  auto g = CachedEdge<mNode>{e.p, ComplexValue{static_cast<int64_t>(1)}};
   if (e.p->v >= lowerbound) {
     g = reduceAncillaeRecursion(e.p, ancillary, lowerbound, regular);
   }
@@ -1051,7 +1051,7 @@ mEdge Package::reduceGarbage(const mEdge& e, const std::vector<bool>& garbage,
     }
   }
 
-  auto g = CachedEdge<mNode>{e.p, 1.};
+  auto g = CachedEdge<mNode>{e.p, ComplexValue{static_cast<int64_t>(1)}};
   if (e.p->v >= lowerbound || normalizeWeights) {
     g = reduceGarbageRecursion(e.p, garbage, lowerbound, regular,
                                normalizeWeights);
@@ -1086,7 +1086,7 @@ mCachedEdge Package::reduceAncillaeRecursion(mNode* p,
                                              const Qubit lowerbound,
                                              const bool regular) {
   if (p->v < lowerbound) {
-    return {p, 1.};
+    return {p, ComplexValue{static_cast<int64_t>(1)}};
   }
 
   std::array<mCachedEdge, NEDGE> edges{};
@@ -1159,7 +1159,7 @@ vCachedEdge Package::reduceGarbageRecursion(vNode* p,
                                             const Qubit lowerbound,
                                             const bool normalizeWeights) {
   if (!normalizeWeights && p->v < lowerbound) {
-    return {p, 1.};
+    return {p, ComplexValue{static_cast<int64_t>(1)}};
   }
 
   std::array<vCachedEdge, RADIX> edges{};
@@ -1206,7 +1206,7 @@ mCachedEdge Package::reduceGarbageRecursion(mNode* p,
                                             const bool regular,
                                             const bool normalizeWeights) {
   if (!normalizeWeights && p->v < lowerbound) {
-    return {p, 1.};
+    return {p, ComplexValue{static_cast<int64_t>(1)}};
   }
 
   std::array<mCachedEdge, NEDGE> edges{};

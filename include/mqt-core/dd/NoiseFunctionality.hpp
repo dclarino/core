@@ -27,6 +27,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <complex>
 
 namespace dd {
 
@@ -67,6 +68,8 @@ protected:
   fp oneMinusSqrtAmplitudeDampingProbability;
   fp sqrtAmplitudeDampingProbabilityMulti;
   fp oneMinusSqrtAmplitudeDampingProbabilityMulti;
+
+  // GateMatrix is std::array<std::complex<double>, 4>
   GateMatrix ampDampingTrue{};
   GateMatrix ampDampingTrueMulti{};
   GateMatrix ampDampingFalse{};

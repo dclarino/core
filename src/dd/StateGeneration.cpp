@@ -161,16 +161,16 @@ VectorDD makeBasisState(const std::size_t n,
       edges = {vCachedEdge::zero(), f};
       break;
     case BasisStates::plus:
-      edges = {{{f.p, dd::SQRT2_2}, {f.p, dd::SQRT2_2}}};
+      edges = {{{f.p, ComplexValue{dd::SQRT2_2}}, {f.p, ComplexValue{dd::SQRT2_2}}}};
       break;
     case BasisStates::minus:
-      edges = {{{f.p, dd::SQRT2_2}, {f.p, -dd::SQRT2_2}}};
+      edges = {{{f.p, ComplexValue{dd::SQRT2_2}}, {f.p, ComplexValue{-dd::SQRT2_2}}}};
       break;
     case BasisStates::right:
-      edges = {{{f.p, dd::SQRT2_2}, {f.p, {0, dd::SQRT2_2}}}};
+      edges = {{{f.p, ComplexValue{dd::SQRT2_2}}, {f.p, ComplexValue{0.0, dd::SQRT2_2}}}};
       break;
     case BasisStates::left:
-      edges = {{{f.p, dd::SQRT2_2}, {f.p, {0, -dd::SQRT2_2}}}};
+      edges = {{{f.p, ComplexValue{dd::SQRT2_2}}, {f.p, ComplexValue{0.0, -dd::SQRT2_2}}}};
       break;
     }
     f = dd.makeDDNode(v, edges);

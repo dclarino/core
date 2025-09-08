@@ -10,10 +10,21 @@
 
 namespace dd {
 
+void ComplexValue::updateComponents() {
+    r = 0.0;
+    i = 0.0;
+    for (int k = 0; k <= OmegaDegree; ++k) {
+        r += coeffs[k] * std::cos(k * M_PI / 4.0);
+        i += coeffs[k] * std::sin(k * M_PI / 4.0);
+    }
+}
+
 ComplexValue ComplexValue::omega(int k) {
     Coeffs c{};
     c[(k % 8 + 8) % 8] = 1;
-    return ComplexValue(c);
+    ComplexValue val(c);
+    val.updateComponents();
+    return val;
 }
 
 bool ComplexValue::operator==(const ComplexValue& other) const noexcept {
@@ -54,12 +65,14 @@ void ComplexValue::writeBinary(std::ostream& os) const {
 void ComplexValue::readBinary(std::istream& is) {
     for (auto& c : coeffs)
         is.read(reinterpret_cast<char*>(&c), sizeof(int64_t));
+    updateComponents();
 }
 
 void ComplexValue::fromString(const std::string& realStr, std::string imagStr) {
     coeffs.fill(0);
     coeffs[0] = realStr.empty() ? 0 : std::stoll(realStr);
     coeffs[2] = imagStr.empty() ? 0 : std::stoll(imagStr);
+    updateComponents();
 }
 
 std::string ComplexValue::toString(const double& real, const double& imag, bool formatted, int precision) {
@@ -77,27 +90,21 @@ std::string ComplexValue::toString(const double& real, const double& imag, bool 
 }
 
 std::string ComplexValue::toString(bool formatted, int precision) const {
-    return toString(real(), imag(), formatted, precision);
+    return toString(r, i, formatted, precision);
 }
 
 ComplexValue& ComplexValue::operator+=(const ComplexValue& rhs) noexcept {
     for (size_t i = 0; i < coeffs.size(); ++i)
         coeffs[i] += rhs.coeffs[i];
+    updateComponents();
     return *this;
 }
 
 ComplexValue& ComplexValue::operator*=(int64_t s) noexcept {
     for (size_t i = 0; i < coeffs.size(); ++i)
         coeffs[i] *= s;
+    updateComponents();
     return *this;
-}
-
-// Member function for addition
-ComplexValue ComplexValue::operator+(const ComplexValue& other) const noexcept {
-    ComplexValue res;
-    for (size_t i = 0; i < coeffs.size(); ++i)
-        res.coeffs[i] = coeffs[i] + other.coeffs[i];
-    return res;
 }
 
 ComplexValue ComplexValue::operator*(const ComplexValue& other) const noexcept {
@@ -105,6 +112,7 @@ ComplexValue ComplexValue::operator*(const ComplexValue& other) const noexcept {
     for (size_t i = 0; i < coeffs.size(); ++i)
         for (size_t j = 0; j < coeffs.size(); ++j)
             res.coeffs[(i + j) % coeffs.size()] += coeffs[i] * other.coeffs[j];
+    res.updateComponents();
     return res;
 }
 
@@ -112,6 +120,7 @@ ComplexValue ComplexValue::operator*(int64_t s) const noexcept {
     ComplexValue res;
     for (size_t i = 0; i < coeffs.size(); ++i)
         res.coeffs[i] = coeffs[i] * s;
+    res.updateComponents();
     return res;
 }
 
@@ -119,23 +128,11 @@ ComplexValue ComplexValue::operator-() const noexcept {
     ComplexValue res;
     for (size_t i = 0; i < coeffs.size(); ++i)
         res.coeffs[i] = -coeffs[i];
+    res.updateComponents();
     return res;
 }
 
-double ComplexValue::real() const noexcept {
-    double r = 0.0;
-    for (int k = 0; k <= OmegaDegree; ++k)
-        r += coeffs[k] * std::cos(k * M_PI / 4.0);
-    return r;
-}
-double ComplexValue::imag() const noexcept {
-    double i = 0.0;
-    for (int k = 0; k <= OmegaDegree; ++k)
-        i += coeffs[k] * std::sin(k * M_PI / 4.0);
-    return i;
-}
 double ComplexValue::mag2() const noexcept {
-    double r = real(), i = imag();
     return r*r + i*i;
 }
 double ComplexValue::mag() const noexcept {
@@ -143,12 +140,16 @@ double ComplexValue::mag() const noexcept {
 }
 
 std::complex<double> ComplexValue::asFloat() const noexcept {
-    return std::complex<double>(real(), imag());
+    return std::complex<double>(r, i);
 }
 
-// Non-member operator+ (fixes ambiguity!)
+// Non-member operator+ (only this now, fixes ambiguity!)
 ComplexValue operator+(const ComplexValue& c1, const ComplexValue& c2) {
-    return c1.operator+(c2);
+    ComplexValue res;
+    for (size_t i = 0; i < c1.coeffs.size(); ++i)
+        res.coeffs[i] = c1.coeffs[i] + c2.coeffs[i];
+    res.updateComponents();
+    return res;
 }
 ComplexValue operator*(const ComplexValue& c1, int64_t s) { return c1.operator*(s); }
 ComplexValue operator*(int64_t s, const ComplexValue& c1) { return c1.operator*(s); }
@@ -160,6 +161,7 @@ ComplexValue operator/(const ComplexValue& c1, int64_t s) {
             throw std::runtime_error("Omega division: coefficient not divisible by scalar");
         res.coeffs[i] = c1.coeffs[i] / s;
     }
+    res.updateComponents();
     return res;
 }
 ComplexValue operator/(const ComplexValue& /*c1*/, const ComplexValue& /*c2*/) {
