@@ -93,6 +93,17 @@ dd::mCachedEdge makeDDFromMatrix(
        makeDDFromMatrix(p, m, rowHalf, rowEnd, colStart, colHalf, level - 1),
        makeDDFromMatrix(p, m, rowHalf, rowEnd, colHalf, colEnd, level - 1)});
 }
+
+// Fix for pybind11 binding error: use free functions instead of lambdas
+std::complex<dd::fp> inner_product(dd::Package& p, const dd::vEdge& lhs, const dd::vEdge& rhs) {
+    const auto result = p.innerProduct(lhs, rhs);
+    return std::complex<dd::fp>(result.r, result.i);
+}
+std::complex<dd::fp> trace(dd::Package& p, const dd::mEdge& mat, const size_t numQubits) {
+  const auto result = p.trace(mat, numQubits);
+  return std::complex<dd::fp>(result.r, result.i);
+}
+
 } // namespace
 
 // NOLINTNEXTLINE(misc-use-internal-linkage)
@@ -456,12 +467,7 @@ void registerDDPackage(const py::module& mod) {
       // keep the DD package alive while the returned matrix DD is alive.
       py::keep_alive<0, 1>());
 
-  dd.def(
-      "inner_product",
-      [](dd::Package& p, const dd::vEdge& lhs, const dd::vEdge& rhs) {
-        return std::complex<dd::fp>{p.innerProduct(lhs, rhs)};
-      },
-      "lhs"_a, "rhs"_a);
+  dd.def("inner_product", &inner_product, "lhs"_a, "rhs"_a);
 
   dd.def("fidelity", &dd::Package::fidelity, "lhs"_a, "rhs"_a);
 
@@ -488,11 +494,6 @@ void registerDDPackage(const py::module& mod) {
          // keep the DD package alive while the returned matrix DD is alive.
          py::keep_alive<0, 1>());
 
-  dd.def(
-      "trace",
-      [](dd::Package& p, const dd::mEdge& mat, const size_t numQubits) {
-        return std::complex<dd::fp>{p.trace(mat, numQubits)};
-      },
-      "mat"_a, "num_qubits"_a);
+  dd.def("trace", &trace, "mat"_a, "num_qubits"_a);
 }
 } // namespace mqt
