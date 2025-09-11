@@ -47,7 +47,7 @@ MatrixDD getStandardOperationDD(Package& dd, const qc::OpType type,
       throw std::invalid_argument(
           "Expected exactly one target qubit for single-qubit gate");
     }
-    return dd.makeGateDD(opToSingleQubitGateMatrix(type, params), controls,
+    return dd.makeGateDD(type, controls,
                          targets[0U]);
   }
   if (qc::isTwoQubitGate(type)) {

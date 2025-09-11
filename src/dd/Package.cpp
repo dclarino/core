@@ -251,6 +251,76 @@ mEdge Package::makeGateDD(const GateMatrix& mat, const qc::Controls& controls,
   }
   return {e.p, cn.lookup(e.w)};
 }
+mEdge Package::makeGateDD(const qc::OpType type, const qc::Control& control,
+                          const qc::Qubit target) {
+  return makeGateDD(type, qc::Controls{control}, target);
+}
+
+mEdge Package::makeGateDD(const qc::OpType type, const qc::Controls& controls,
+                   qc::Qubit target) {
+  if (std::ranges::any_of(controls,
+                          [this](const auto& c) {
+                            return c.qubit > static_cast<Qubit>(nqubits - 1U);
+                          }) ||
+      target > static_cast<Qubit>(nqubits - 1U)) {
+    throw std::runtime_error{
+        "Requested gate acting on qubit(s) with index larger than " +
+        std::to_string(nqubits - 1U) +
+        " while the package configuration only supports up to " +
+        std::to_string(nqubits) +
+        " qubits. Please allocate a larger package instance."};
+  }
+  const cvGateMatrix& mat = cvopToSingleQubitGateMatrix(type,{});
+  std::array<mCachedEdge, NEDGE> em{};
+  for (auto i = 0U; i < NEDGE; ++i) {
+    em[i] = mCachedEdge::terminal(mat[i]);
+  }
+
+  if (controls.empty()) {
+    // Single qubit operation
+    const auto e = makeDDNode(static_cast<Qubit>(target), em);
+    return {e.p, cn.lookup(e.w)};
+  }
+
+  auto it = controls.begin();
+  auto edges = std::array{mCachedEdge::zero(), mCachedEdge::zero(),
+                          mCachedEdge::zero(), mCachedEdge::zero()};
+
+  // process lines below target
+  for (; it != controls.end() && it->qubit < target; ++it) {
+    for (auto i1 = 0U; i1 < RADIX; ++i1) {
+      for (auto i2 = 0U; i2 < RADIX; ++i2) {
+        const auto i = (i1 * RADIX) + i2;
+        if (it->type == qc::Control::Type::Neg) { // neg. control
+          edges[0] = em[i];
+          edges[3] = (i1 == i2) ? mCachedEdge::one() : mCachedEdge::zero();
+        } else { // pos. control
+          edges[0] = (i1 == i2) ? mCachedEdge::one() : mCachedEdge::zero();
+          edges[3] = em[i];
+        }
+        em[i] = makeDDNode(static_cast<Qubit>(it->qubit), edges);
+      }
+    }
+  }
+
+  // target line
+  auto e = makeDDNode(static_cast<Qubit>(target), em);
+
+  // process lines above target
+  for (; it != controls.end(); ++it) {
+    if (it->type == qc::Control::Type::Neg) { // neg. control
+      edges[0] = e;
+      edges[3] = mCachedEdge::one();
+      e = makeDDNode(static_cast<Qubit>(it->qubit), edges);
+    } else { // pos. control
+      edges[0] = mCachedEdge::one();
+      edges[3] = e;
+      e = makeDDNode(static_cast<Qubit>(it->qubit), edges);
+    }
+  }
+  return {e.p, cn.lookup(e.w)};
+}
+
 mEdge Package::makeTwoQubitGateDD(const TwoQubitGateMatrix& mat,
                                   const qc::Qubit target0,
                                   const qc::Qubit target1) {

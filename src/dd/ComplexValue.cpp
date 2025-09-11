@@ -127,7 +127,7 @@ ComplexValue ComplexValue::operator*(int64_t s) const noexcept {
 ComplexValue ComplexValue::operator-() const noexcept {
     ComplexValue res;
     for (size_t i = 0; i < coeffs.size(); ++i)
-        res.coeffs[i] = -coeffs[i];
+        res.coeffs[i] = -coeffs[i] % 8;
     res.updateComponents();
     return res;
 }

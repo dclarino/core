@@ -372,6 +372,7 @@ public:
    */
   mEdge makeGateDD(const GateMatrix& mat, qc::Qubit target);
 
+
   /**
    * @brief Construct the DD for a single-qubit controlled gate
    * @param mat The matrix representation of the gate
@@ -382,6 +383,16 @@ public:
   mEdge makeGateDD(const GateMatrix& mat, const qc::Control& control,
                    qc::Qubit target);
 
+    /**
+   * @brief Construct the DD for a single-qubit controlled gate
+   * @param mat The matrix representation of the gate
+   * @param control The control qubit
+   * @param target The target qubit
+   * @return A decision diagram for the gate
+   */
+  mEdge makeGateDD(const qc::OpType type, const qc::Control& control,
+                   qc::Qubit target);
+
   /**
    * @brief Construct the DD for a multi-controlled single-qubit gate
    * @param mat The matrix representation of the gate
@@ -390,6 +401,16 @@ public:
    * @return A decision diagram for the gate
    */
   mEdge makeGateDD(const GateMatrix& mat, const qc::Controls& controls,
+                   qc::Qubit target);
+
+  /**
+   * @brief Construct the DD for a multi-controlled single-qubit gate
+   * @param mat The matrix representation of the gate
+   * @param controls The control qubits
+   * @param target The target qubit
+   * @return A decision diagram for the gate
+   */
+  mEdge makeGateDD(const qc::OpType type, const qc::Controls& controls,
                    qc::Qubit target);
 
   /**

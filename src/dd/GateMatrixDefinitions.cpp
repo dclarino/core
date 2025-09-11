@@ -22,6 +22,19 @@
 namespace {
 using namespace dd;
 
+inline ComplexValue c(const ComplexValue::Coeffs& coeffs) {
+    return ComplexValue(coeffs);
+}
+
+#define CV1  c({1, 0, 0, 0, 0, 0, 0, 0})
+#define CV0  c({0, 0, 0, 0, 0, 0, 0, 0})
+#define CVM1  c({-1, 0, 0, 0, 0, 0, 0, 0})
+#define CVi  c({0, 0, 1, 0, 0, 0, 0, 0})
+#define CVMi  c({0, 0, -1, 0, 0, 0, 0, 0})
+#define CVSQRT2_2 c({0, 1, 0, 0, 0, 0, 0, 1})
+#define CVMSQRT2_2 c({0, -1, 0, 0, 0, 0, 0, -1})
+#define CViSQRT2_2 c({0, 1, 0, 0, 0, 0, 0, 0})
+#define CVMiSQRT2_2 c({0, 0, 0, 0, 0, 0, 0, 1})  
 GateMatrix uMat(const fp lambda, const fp phi, const fp theta) {
   return GateMatrix{{{std::cos(theta / 2.), 0.},
                      {-std::cos(lambda) * std::sin(theta / 2.),
@@ -220,6 +233,38 @@ TwoQubitGateMatrix opToTwoQubitGateMatrix(const qc::OpType t,
     return xxMinusYYMat(params.at(0), params.at(1));
   case qc::XXplusYY:
     return xxPlusYYMat(params.at(0), params.at(1));
+  default:
+    throw std::invalid_argument("Invalid two-qubit gate type");
+  }
+}
+cvGateMatrix cvopToSingleQubitGateMatrix(const qc::OpType t,
+                                         const std::vector<fp>& params) {
+  switch (t) {
+  case qc::I:
+    return {CV1, CV0, CV0, CV1};
+  case qc::H:
+    return {CVSQRT2_2, CVSQRT2_2, CVSQRT2_2, CVMSQRT2_2};
+  case qc::X:
+    return {CV0, CV1, CV1, CV0};
+  case qc::Y:
+    return {CV0, CVMi, CVi, CV0};
+  case qc::Z:
+    return {CV1, CV0, CV0, CVM1};
+  case qc::S:
+    return {CV1, CV0, CV0, CVi};
+  case qc::Sdg:
+    return {CV1, CV0, CV0, CVMi};
+  case qc::T:
+    return {CV1, CV0, CV0, CViSQRT2_2};
+  case qc::Tdg:
+    return {CV1, CV0, CV0, CVMiSQRT2_2};
+  default:
+    throw std::invalid_argument("Invalid single-qubit gate type");
+  }
+}
+cvTwoQubitGateMatrix cvopToTwoQubitGateMatrix(const qc::OpType t,
+                                              const std::vector<fp>& params) {
+  switch (t) {
   default:
     throw std::invalid_argument("Invalid two-qubit gate type");
   }
